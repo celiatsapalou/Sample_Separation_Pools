@@ -1,32 +1,34 @@
+# Load the config.yaml file
 configfile: "config.yaml"
 
+# Variables loaded from the config file
+samples = config["samples"]
+bam_base_dir = config["bam_base_dir"]
+predictions_dir = config["predictions_dir"]
+symlink_dir = config["symlink_dir"]
+renamed_bams_dir = config.get("renamed_bams_dir", "renamed_bams")  # Default directory if not specified in config
+
+# Rule all to trigger symlinking and processing for all samples
 rule all:
     input:
-        expand(os.path.join(config["symlink_dir"], "{sample}_symlinks"), sample=config["samples"])
+        expand(os.path.join(renamed_bams_dir, "{sample}_renamed_bams/done.txt"), sample=samples.keys())
 
+# Rule to create symlinks for individual BAM and BAI files using process_bam.py
 rule create_symlinks:
     input:
-        bam_dir=lambda wildcards: os.path.join(config["bam_base_dir"], wildcards.sample, config["subdir"], "bam"),
-        predictions=lambda wildcards: os.path.join(config["predictions_dir"], f"{wildcards.sample}--{config['subdir']}", f"{config['subdir']}_predictions_lite.xlsx")
+        bam_dir=lambda wildcards: os.path.join(bam_base_dir, wildcards.sample, samples[wildcards.sample], "bam"),
+        predictions=lambda wildcards: os.path.join(predictions_dir, f"{wildcards.sample}--{samples[wildcards.sample]}", f"{samples[wildcards.sample]}_predictions_lite.xlsx")
     output:
-        symlink_dir=directory(os.path.join(config["symlink_dir"], "{sample}_symlinks"))  # Mark as directory
+        done=os.path.join(renamed_bams_dir, "{sample}_renamed_bams/done.txt")
+    params:
+        renamed_bams=os.path.join(renamed_bams_dir, "{sample}_renamed_bams")
     shell:
         """
-        # Create symlink directory if not exists
-        mkdir -p {output.symlink_dir}
+        mkdir -p {params.renamed_bams}
         
-        # Create symlinks for BAM files
-        for bam_file in $(ls {input.bam_dir}); do
-            ln -s {input.bam_dir}/$bam_file {output.symlink_dir}/$bam_file
-        done
+        # Run the process_bam.py script to process and rename each BAM file
+        python process_bam.py {input.bam_dir} {input.predictions} {params.renamed_bams}
+        
+        # Create a done.txt file to mark the completion
+        touch {output.done}
         """
-
-# Rule to process the BAM files using the predictions and renaming them
-rule process_bam_files:
-    input:
-        symlink_dir="{sample}_symlinks",
-        predictions=lambda wildcards: os.path.join(config["predictions_dir"], f"{wildcards.sample}--{config['subdir']}", f"{config['subdir']}_predictions_lite.xlsx")
-    output:
-        done_file=os.path.join(config["symlink_dir"], "{sample}_symlinks/done.txt")
-    script:
-        "process_bam.py"

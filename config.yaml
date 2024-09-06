@@ -1,7 +1,8 @@
 samples:
-  - 2024-01-30-AACT75KM5
+  2023-11-09-HW5NFAFX5: HGSVCpool1NEW
+  2024-01-30-AACT75KM5: HGSVCpool1NEWp2
 
-subdir: HGSVCpool1NEWp2
-symlink_dir: ./HGSVCpool1NEWp2_symlinks  # Path to where symlinks will be created
-bam_base_dir: /scratch/tweber/DATA/MC_DATA/STOCKS  # Base directory for the BAM files
-predictions_dir: /g/korbel2/tsapalou/pools_2024/pool1new  # Base directory for the predictions
+symlink_dir: HGSVCpool_symlinks
+bam_base_dir: /scratch/tweber/DATA/MC_DATA/STOCKS
+predictions_dir: /g/korbel2/tsapalou/pools_2024/pool1new
+renamed_bams_dir: renamed_bams
